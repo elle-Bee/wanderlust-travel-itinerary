@@ -46,7 +46,7 @@ const cleanOutput = (output) => {
 };
 
 const Home = () => {
-  const [duration, setDuration] = useState(7);
+  const [duration, setDuration] = useState(5);
   const [hotels, setHotels] = useState(true);
   const [restaurants, setRestaurants] = useState(true);
   const [selectedCountry, setSelectedCountry] = useState('');
@@ -110,12 +110,11 @@ const Home = () => {
         <div className="container-left">
           <div className="header">
             <div className="header-title">
-              <h1>Travel Itinerary Generator 🪄</h1>
+              <h1>Know your trip with us. 🪄</h1>
             </div>
             <div className="header-subtitle">
               <h2>
-                Give me some details and I'll 🪄 an itinerary just for
-                you!
+                Wanderlust provides you with best attractions and restaurants to explore!
               </h2>
             </div>
           </div>
@@ -224,7 +223,7 @@ const Home = () => {
                 </div>
               </div>
             </div>
-            <div className="prompt-buttons">
+            <div className="prompt-buttons" style={{color: "red"}}>
               <button
                 className="pushable py-2 px-4 rounded"
                 onClick={callGenerateEndpoint}
@@ -246,11 +245,12 @@ const Home = () => {
             </div>
           </div>
         </div>
-        <div className="container-right" ref={divRef}>
-          {loading && <div>Loading...</div>}
-          {/* Formatted output with dangerouslySetInnerHTML */}
-          <div dangerouslySetInnerHTML={{ __html: cleanedOutput }}></div>
-        </div>
+        <div className="container-right" ref={divRef} style={{ backgroundColor: "#F8FAFC", color: "black" }}>
+    {loading && <div>Loading...</div>}
+    {/* Formatted output with dangerouslySetInnerHTML */}
+    <div dangerouslySetInnerHTML={{ __html: cleanedOutput }}></div>
+          </div>
+
       </div>
     </div>
   );
