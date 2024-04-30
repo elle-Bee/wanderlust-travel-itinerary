@@ -417,7 +417,7 @@ textarea {
     height: 100%;
     border-radius: 12px;
     background: linear-gradient(to left,
-            rgb(6 78 59) 0% rgb(4 120 87) 8% rgb(4 120 87) 92% rgb(6 78 59) 100%);
+            rgb(6 78 59) 0% rgb(52,211,153) 8% rgb(52,211,153) 92% rgb(6 78 59) 100%);
 }
 
 .front {
@@ -427,7 +427,7 @@ textarea {
     border-radius: 12px;
     font-size: 1.05rem;
     color: white;
-    background: rgb(4 120 87);
+    background: rgb(52,211,153);
     will-change: transform;
     transform: translateY(-4px);
     transition:
