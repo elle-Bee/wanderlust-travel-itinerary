@@ -1,6 +1,4 @@
 import { useState, useRef, useEffect } from 'react';
-import Image from 'next/image';
-import buildspaceLogo from '../assets/buildspace-logo.png';
 import { countryList } from '../assets/countryList';
 import {
   IconCircleNumber1,
@@ -29,13 +27,14 @@ const basePrompt = "Write me an itinerary for";
 const addHotelsPrompt = "- Hotel (prefer not to change it unless traveling to another city)\n";
 const addRestaurantsPrompt = "- 2 Restaurants, one for lunch and another for dinner, with shortened Google Map links\n";
 
-import { Counter } from 'prom-client';
-
-const generateClickCounter = new Counter({
-  name: 'nextjs_app_generate_clicks',
-  help: 'Tracks the number of times the user clicks the generate button',
-  labelNames: ['button'],
-});
+const cleanOutput = (output) => {
+  let cleanedText = output.replace(/"output":/g, '').replace(/[{}]/g, '');
+  cleanedText = cleanedText.replace(/^"|"$/g, '');
+  cleanedText = cleanedText.replace(/\*\*|\*/g, ' ');
+  cleanedText = cleanedText.replace(/\\n/g, '\n');
+  cleanedText = cleanedText.trim();
+  return cleanedText;
+};
 
 const Home = () => {
   const [duration, setDuration] = useState(5);
@@ -43,11 +42,9 @@ const Home = () => {
   const [restaurants, setRestaurants] = useState(true);
   const [selectedCountry, setSelectedCountry] = useState('');
   const [selectedMonth, setSelectedMonth] = useState('Any month');
-
   const [apiOutput, setApiOutput] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [cleanedOutput, setCleanedOutput] = useState('');
-  const [structuredOutput, setStructuredOutput] = useState({});
   const [loading, setLoading] = useState(false);
 
   const divRef = useRef(null);
@@ -60,18 +57,16 @@ const Home = () => {
     setLoading(true);
     setIsGenerating(true);
 
-    generateClickCounter.inc({ button: 'generate_button' });
-
     let prompt = `${basePrompt} ${duration} days to ${selectedCountry} in the coming ${selectedMonth}. Describe the weather that month, and also 5 things to take note about this country's culture. Keep to a maximum travel area to the size of Hokkaido, if possible, to minimize traveling time between cities.\n\nFor each day, list me the following:\n- Attractions suitable for that season\n`;
     if (hotels) prompt += addHotelsPrompt;
     if (restaurants) prompt += addRestaurantsPrompt;
     prompt += 'and give me a daily summary of the above points into a paragraph or two.\n';
-
     prompt += 'Output the data in a structured format, including separate sections for each day with attractions, hotels, and restaurants listed.\n';
-    prompt+='Format the output, use bulletpoints,newlines and tabs. To do so use html tags <h1>, <h2>, <h3>, <b>, <i>, <br><br>, <p>, <li>, <ul>, etc. to format and output in an orderly manner, give them good spacing, separating the days, places to visits, attractions, etc.\n';
-    console.log('Calling Gemini');
-
+    prompt += 'Format the output, use bulletpoints,newlines and tabs. To do so use html tags <h1>, <h2>, <h3>, <b>, <i>, <br><br>, <p>, <li>, <ul>, etc. to format and output in an orderly manner, give them good spacing, sepereating the days, places to visits, attractions, etc.\n';
+    
     try {
+      await fetch('/api/metrics', { method: 'POST' });
+
       const response = await fetch('/api/generate', {
         method: 'POST',
         headers: {
@@ -85,7 +80,6 @@ const Home = () => {
       }
 
       const generatedText = await response.text();
-      console.log(generatedText);
       setApiOutput(generatedText);
     } catch (error) {
       console.error('Error generating content:', error);
@@ -104,9 +98,7 @@ const Home = () => {
               <h1>Know your trip with us. 🪄</h1>
             </div>
             <div className="header-subtitle">
-              <h2>
-                Wanderlust provides you with best attractions and restaurants to explore!
-              </h2>
+              <h2>Wanderlust provides you with best attractions and restaurants to explore!</h2>
             </div>
           </div>
           <div className="prompt-container">
@@ -215,7 +207,7 @@ const Home = () => {
               </div>
             </div>
             <div className="prompt-buttons" style={{color: "red"}}>
-              <button
+            <button
                 className="pushable py-2 px-4 rounded"
                 onClick={callGenerateEndpoint}
                 disabled={isGenerating}
@@ -238,7 +230,6 @@ const Home = () => {
         </div>
         <div className="container-right" ref={divRef} style={{ backgroundColor: "#F8FAFC", color: "black" }}>
           {loading && <div>Loading...</div>}
-          {/* Formatted output with dangerouslySetInnerHTML */}
           <div dangerouslySetInnerHTML={{ __html: cleanedOutput }}></div>
         </div>
       </div>
