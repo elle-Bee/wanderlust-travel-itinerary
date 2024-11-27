@@ -1,0 +1,52 @@
+version: "3.8"
+
+services:
+  nextjs-app:
+    build: .
+    container_name: nextjs-app
+    ports:
+      - "3002:3001"  # Map host port 3002 to container port 3001
+    networks:
+      - default
+    depends_on:
+      - prometheus
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"  # Exposing Prometheus UI on port 9090
+    volumes:
+      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - default
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3003:3000"  # Exposing Grafana UI on port 3003
+    networks:
+      - default
+    depends_on:
+      - prometheus
+    volumes:
+      - grafana_data:/var/lib/grafana
+
+  jenkins:
+    image: jenkins/jenkins:lts
+    container_name: jenkins
+    ports:
+      - "8080:8080"
+    networks:
+      - default
+    volumes:
+      - jenkins_home:/var/jenkins_home
+
+networks:
+  default:
+    driver: bridge
+
+volumes:
+  grafana_data:
+  jenkins_home:
