@@ -3,4 +3,11 @@ const nextConfig = {
   reactStrictMode: true,
 }
 
-module.exports = nextConfig
+module.exports = {
+  devIndicators: {
+    autoPrerender: false,
+  },
+  env: {
+    PORT: process.env.PORT || 30001
+  },
+}
