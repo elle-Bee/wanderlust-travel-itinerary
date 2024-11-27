@@ -29,21 +29,13 @@ const basePrompt = "Write me an itinerary for";
 const addHotelsPrompt = "- Hotel (prefer not to change it unless traveling to another city)\n";
 const addRestaurantsPrompt = "- 2 Restaurants, one for lunch and another for dinner, with shortened Google Map links\n";
 
-const cleanOutput = (output) => {
-  // Remove "output": and curly braces {}
-  let cleanedText = output.replace(/"output":/g, '').replace(/[{}]/g, '');
-  cleanedText = cleanedText.replace(/^"|"$/g, '');
-  // Replace * and ** with whitespace
-  cleanedText = cleanedText.replace(/\*\*|\*/g, ' ');
+import { Counter } from 'prom-client';
 
-  // Replace \n with line break
-  cleanedText = cleanedText.replace(/\\n/g, '\n');
-
-  // Trim any leading or trailing whitespace
-  cleanedText = cleanedText.trim();
-
-  return cleanedText;
-};
+const generateClickCounter = new Counter({
+  name: 'nextjs_app_generate_clicks',
+  help: 'Tracks the number of times the user clicks the generate button',
+  labelNames: ['button'],
+});
 
 const Home = () => {
   const [duration, setDuration] = useState(5);
@@ -68,15 +60,15 @@ const Home = () => {
     setLoading(true);
     setIsGenerating(true);
 
-    // Construct the prompt based on user input
+    generateClickCounter.inc({ button: 'generate_button' });
+
     let prompt = `${basePrompt} ${duration} days to ${selectedCountry} in the coming ${selectedMonth}. Describe the weather that month, and also 5 things to take note about this country's culture. Keep to a maximum travel area to the size of Hokkaido, if possible, to minimize traveling time between cities.\n\nFor each day, list me the following:\n- Attractions suitable for that season\n`;
     if (hotels) prompt += addHotelsPrompt;
     if (restaurants) prompt += addRestaurantsPrompt;
     prompt += 'and give me a daily summary of the above points into a paragraph or two.\n';
 
-    // Specify the format of data you want from Gemini
     prompt += 'Output the data in a structured format, including separate sections for each day with attractions, hotels, and restaurants listed.\n';
-    prompt+='Format the output, use bulletpoints,newlines and tabs. To do so use html tags <h1>, <h2>, <h3>, <b>, <i>, <br><br>, <p>, <li>, <ul>, etc. to format and output in an orderly manner, give them good spacing, sepereating the days, places to visits, attractions, etc.\n'
+    prompt+='Format the output, use bulletpoints,newlines and tabs. To do so use html tags <h1>, <h2>, <h3>, <b>, <i>, <br><br>, <p>, <li>, <ul>, etc. to format and output in an orderly manner, give them good spacing, separating the days, places to visits, attractions, etc.\n';
     console.log('Calling Gemini');
 
     try {
@@ -92,14 +84,13 @@ const Home = () => {
         throw new Error('Failed to generate content');
       }
 
-      // Assuming the response contains the generated text directly
       const generatedText = await response.text();
       console.log(generatedText);
-      setApiOutput(generatedText); // Set the generated text to state
+      setApiOutput(generatedText);
     } catch (error) {
       console.error('Error generating content:', error);
     } finally {
-      setIsGenerating(false); // Reset the loading state regardless of success or failure
+      setIsGenerating(false);
       setLoading(false);
     }
   };
@@ -246,11 +237,10 @@ const Home = () => {
           </div>
         </div>
         <div className="container-right" ref={divRef} style={{ backgroundColor: "#F8FAFC", color: "black" }}>
-    {loading && <div>Loading...</div>}
-    {/* Formatted output with dangerouslySetInnerHTML */}
-    <div dangerouslySetInnerHTML={{ __html: cleanedOutput }}></div>
-          </div>
-
+          {loading && <div>Loading...</div>}
+          {/* Formatted output with dangerouslySetInnerHTML */}
+          <div dangerouslySetInnerHTML={{ __html: cleanedOutput }}></div>
+        </div>
       </div>
     </div>
   );
