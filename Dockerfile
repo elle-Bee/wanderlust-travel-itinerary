@@ -12,9 +12,9 @@ COPY . .
 RUN npm run build
 
 # Set the PORT environment variable inside the container
-ENV PORT=3001
+ENV PORT=3003
 
-EXPOSE 3001
+EXPOSE 3003
 
 # Start the Next.js production server
 CMD ["npm", "start"]

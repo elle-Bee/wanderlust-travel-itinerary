@@ -8,6 +8,6 @@ module.exports = {
     autoPrerender: false,
   },
   env: {
-    PORT: process.env.PORT || 30001
+    PORT: process.env.PORT || 3003
   },
 }
