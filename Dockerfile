@@ -12,7 +12,7 @@ COPY . .
 RUN npm run build
 
 # Set the PORT environment variable inside the container
-ENV PORT=3003
+ENV PORT=3000
 
 EXPOSE 3003
 

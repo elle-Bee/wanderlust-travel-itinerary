@@ -30,40 +30,19 @@ const addHotelsPrompt = "- Hotel (prefer not to change it unless traveling to an
 const addRestaurantsPrompt = "- 2 Restaurants, one for lunch and another for dinner, with shortened Google Map links\n";
 
 const cleanOutput = (output) => {
+  // Remove "output": and curly braces {}
   let cleanedText = output.replace(/"output":/g, '').replace(/[{}]/g, '');
   cleanedText = cleanedText.replace(/^"|"$/g, '');
+  // Replace * and ** with whitespace
   cleanedText = cleanedText.replace(/\*\*|\*/g, ' ');
+
+  // Replace \n with line break
   cleanedText = cleanedText.replace(/\\n/g, '\n');
+
+  // Trim any leading or trailing whitespace
   cleanedText = cleanedText.trim();
+
   return cleanedText;
-};
-
-const sendMetric = async (type, data) => {
-  try {
-    await fetch('/api/metrics', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ type, data }),
-    });
-  } catch (error) {
-    console.error('Error sending metric:', error);
-  }
-};
-
-const recordPrometheusMetric = async (metricName, labels = {}) => {
-  try {
-    await fetch('/api/prometheus-metrics', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ metricName, labels }),
-    });
-  } catch (error) {
-    console.error('Error recording Prometheus metric:', error);
-  }
 };
 
 const Home = () => {
@@ -72,10 +51,13 @@ const Home = () => {
   const [restaurants, setRestaurants] = useState(true);
   const [selectedCountry, setSelectedCountry] = useState('');
   const [selectedMonth, setSelectedMonth] = useState('Any month');
+
   const [apiOutput, setApiOutput] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [cleanedOutput, setCleanedOutput] = useState('');
+  const [structuredOutput, setStructuredOutput] = useState({});
   const [loading, setLoading] = useState(false);
+
   const divRef = useRef(null);
 
   useEffect(() => {
@@ -85,17 +67,19 @@ const Home = () => {
   const callGenerateEndpoint = async () => {
     setLoading(true);
     setIsGenerating(true);
+
+    // Construct the prompt based on user input
     let prompt = `${basePrompt} ${duration} days to ${selectedCountry} in the coming ${selectedMonth}. Describe the weather that month, and also 5 things to take note about this country's culture. Keep to a maximum travel area to the size of Hokkaido, if possible, to minimize traveling time between cities.\n\nFor each day, list me the following:\n- Attractions suitable for that season\n`;
     if (hotels) prompt += addHotelsPrompt;
     if (restaurants) prompt += addRestaurantsPrompt;
     prompt += 'and give me a daily summary of the above points into a paragraph or two.\n';
+
+    // Specify the format of data you want from Gemini
     prompt += 'Output the data in a structured format, including separate sections for each day with attractions, hotels, and restaurants listed.\n';
-    prompt += 'Format the output, use bulletpoints,newlines and tabs. To do so use html tags <h1>, <h2>, <h3>, <b>, <i>, <br><br>, <p>, <li>, <ul>, etc. to format and output in an orderly manner, give them good spacing, separating the days, places to visit, attractions, etc.\n';
+    prompt+='Format the output, use bulletpoints,newlines and tabs. To do so use html tags <h1>, <h2>, <h3>, <b>, <i>, <br><br>, <p>, <li>, <ul>, etc. to format and output in an orderly manner, give them good spacing, sepereating the days, places to visits, attractions, etc.\n'
+    console.log('Calling Gemini');
 
     try {
-      sendMetric('generate_attempt', { selectedCountry, duration, selectedMonth });
-      recordPrometheusMetric('button_press_total', { button: 'generate', success: 'false' });
-
       const response = await fetch('/api/generate', {
         method: 'POST',
         headers: {
@@ -108,16 +92,14 @@ const Home = () => {
         throw new Error('Failed to generate content');
       }
 
+      // Assuming the response contains the generated text directly
       const generatedText = await response.text();
-      setApiOutput(generatedText);
-      sendMetric('generate_success', { selectedCountry, duration });
-      recordPrometheusMetric('button_press_total', { button: 'generate', success: 'true' });
+      console.log(generatedText);
+      setApiOutput(generatedText); // Set the generated text to state
     } catch (error) {
       console.error('Error generating content:', error);
-      sendMetric('generate_error', { error: error.message });
-      recordPrometheusMetric('button_press_total', { button: 'generate', success: 'false' });
     } finally {
-      setIsGenerating(false);
+      setIsGenerating(false); // Reset the loading state regardless of success or failure
       setLoading(false);
     }
   };
@@ -128,7 +110,7 @@ const Home = () => {
         <div className="container-left">
           <div className="header">
             <div className="header-title">
-              <h1>Know your trip with us. 🪄</h1>
+              <h1>Know your trips 🪄</h1>
             </div>
             <div className="header-subtitle">
               <h2>
@@ -166,7 +148,7 @@ const Home = () => {
                     className={`item ${selectedCountry.includes(i) && 'selected'}`}
                     key={i}
                     onClick={() => {
-                      setSelectedCountry(i);
+                      setSelectedCountry(i)
                     }}
                   >
                     {i}
@@ -241,22 +223,34 @@ const Home = () => {
                 </div>
               </div>
             </div>
+            <div className="prompt-buttons" style={{color: "red"}}>
+              <button
+                className="pushable py-2 px-4 rounded"
+                onClick={callGenerateEndpoint}
+                disabled={isGenerating}
+              >
+                <span className="shadow"></span>
+                <span className="edge"></span>
+                <div className="front">
+                  {isGenerating ? (
+                    <div>
+                      <span className="loader mr-2"></span>
+                      <span>Applying magic now...</span>
+                    </div>
+                  ) : (
+                    <span className="font-semibold">Generate</span>
+                  )}
+                </div>
+              </button>
+            </div>
           </div>
-          <button
-            onClick={callGenerateEndpoint}
-            className="generate-button mt-4"
-          >
-            {isGenerating ? 'Generating...' : 'Generate'}
-          </button>
         </div>
-        <div
-          className="container-right"
-          ref={divRef}
-          style={{ backgroundColor: '#F8FAFC', color: 'black' }}
-        >
-          {loading && <div>Loading...</div>}
-          <div dangerouslySetInnerHTML={{ __html: cleanedOutput }}></div>
-        </div>
+        <div className="container-right" ref={divRef} style={{ backgroundColor: "#F8FAFC", color: "black" }}>
+    {loading && <div>Loading...</div>}
+    {/* Formatted output with dangerouslySetInnerHTML */}
+    <div dangerouslySetInnerHTML={{ __html: cleanedOutput }}></div>
+          </div>
+
       </div>
     </div>
   );
